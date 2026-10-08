@@ -136,8 +136,9 @@ export default function Share() {
         </form>
 
         <div className="space-y-7" data-testid="share-preview-column">
-          <section className="relative min-h-[520px] overflow-hidden border border-[#581d30] bg-[url('https://images.unsplash.com/photo-1629197520669-0210d6b270d9?auto=format&fit=crop&w=1200&q=80')] bg-cover bg-center p-6 md:p-9" data-testid="share-pass-preview">
-            <div className="absolute inset-0 bg-[#160b0e]/86 backdrop-blur-sm" />
+          <section className="relative min-h-[520px] overflow-hidden rounded-2xl border border-[#581d30] bg-[#100e0e] p-6 shadow-[0_24px_60px_rgba(0,0,0,.2)] md:p-9" data-testid="share-pass-preview">
+            <img src="https://static.prod-images.emergentagent.com/jobs/998467b0-e0cb-41de-9528-3854c8262275/images/86651936e90994e3fab1ceb2e1097038611957257229a46dca61f4133da8715e.jpeg" alt="Abstract secure context network" className="absolute inset-0 h-full w-full object-cover opacity-35" loading="lazy" data-testid="share-custom-artwork" />
+            <div className="absolute inset-0 bg-[#160b0e]/78 backdrop-blur-[2px]" />
             <div className="relative z-10 flex min-h-[450px] flex-col">
               <div className="flex items-start justify-between"><div><p className="font-heading text-3xl" data-testid="share-preview-brand">Skipti AI Connection</p><p className="mt-1 font-mono text-[8px] uppercase tracking-[.2em] text-[#d7a0b1]" data-testid="share-preview-caption">Temporary context-aware Gemini</p></div><StatusPill tone={created ? "good" : "neutral"}>{created ? "Ready" : "Draft"}</StatusPill></div>
               {created ? (

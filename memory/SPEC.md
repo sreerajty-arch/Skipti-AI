@@ -11,6 +11,11 @@ Skipti AI is an MCP-first context intelligence MVP. The preview uses a demo owne
 - Every newly created Persona Pass is also written to Supabase with normalized category permissions. Cookie-less AI fetch tools can read `GET /api/connect/{token}/context?q=...` as `text/plain`; every request rechecks expiry/revocation, filters active entries by Supabase session permissions, and logs an `external_fetch` access event.
 - Temporary guest chat keeps a bounded per-session history for follow-up questions. At QR creation the owner chooses whether chat is deleted on end/revoke (default) or retained only until the pass expires.
 
+## Visual system
+- Two-family editorial type system: Cormorant Garamond for confident display typography and IBM Plex Sans for interface/body text.
+- Dark charcoal surfaces, one burgundy accent, consistent rounded panels, restrained shadows, visible focus states, reduced-motion support, skeleton loading states, and full mobile navigation.
+- Public surfaces use custom Skipti context artwork, real system proof, social preview metadata, a custom Skipti favicon, and a dedicated 404 experience.
+
 ## Seed facts
 - Demo owner: Alex Morgan (`demo@skipti.ai`)
 - Seed Project Holders: Skipti AI (`11111111-1111-4111-8111-111111111111`, revision 3) and Focus Room (`22222222-2222-4222-8222-222222222222`, revision 2)

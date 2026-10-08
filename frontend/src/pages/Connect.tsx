@@ -105,7 +105,7 @@ export default function Connect() {
 
   if (!isSession) {
     return (
-      <main className="editorial-grid min-h-screen bg-[#0c0a09] px-5 py-12 text-foreground" data-testid="connect-page">
+      <main className="editorial-grid page-enter min-h-screen bg-[#0c0a09] px-5 py-12 text-foreground" data-testid="connect-page">
         <div className="mx-auto max-w-xl"><p className="font-heading text-3xl" data-testid="connect-brand">Skipti AI</p>
           <section className="panel mt-20 p-8 text-center" data-testid="connect-redeem-panel">
             <span className="mx-auto grid size-12 place-items-center border border-[#581d30] bg-[#1b0c10] text-[#d7a0b1]" data-testid="connect-lock-icon"><LockKeyhole className="size-4" /></span>
@@ -122,7 +122,7 @@ export default function Connect() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0c0a09] text-foreground" data-testid="connected-ai-page">
+    <main className="page-enter min-h-screen bg-[#0c0a09] text-foreground" data-testid="connected-ai-page">
       <header className="sticky top-0 z-30 border-b border-border bg-[#0c0a09]/92 px-4 py-4 backdrop-blur-xl md:px-8" data-testid="connected-ai-header">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div><p className="font-heading text-2xl" data-testid="connected-ai-brand">Skipti AI</p><p className="font-mono text-[8px] uppercase tracking-[.2em] text-[#9f5169]" data-testid="connected-ai-mode">Connected session</p></div>

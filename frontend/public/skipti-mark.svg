@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Skipti AI</title>
+  <rect width="64" height="64" rx="16" fill="#100e0e"/>
+  <path d="M18 17.5h18.5c7 0 11.5 3.7 11.5 9.5 0 5.2-3.4 8.2-8.7 9.2l8.4 10.3H38l-7.2-9.3H26v9.3h-8V17.5Zm8 6.6v6.8h9.4c3 0 4.5-1.1 4.5-3.4 0-2.2-1.5-3.4-4.5-3.4H26Z" fill="#f5f1ec"/>
+  <path d="M18 17.5h8v29h-8z" fill="#8f2e50"/>
+</svg>

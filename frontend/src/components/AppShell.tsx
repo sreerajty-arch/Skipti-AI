@@ -4,6 +4,7 @@ import {
   BookOpenText,
   Braces,
   LayoutDashboard,
+  Menu,
   Settings,
   Share2,
   Sparkles,
@@ -22,13 +23,16 @@ const nav = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
+const mobilePrimary = [nav[0], nav[2], nav[3], nav[4], nav[5]];
+
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground" data-testid="skipti-app-shell">
+      <a href="#main-content" className="fixed left-4 top-3 z-[80] -translate-y-20 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-[transform] focus:translate-y-0" data-testid="skip-to-content-link">Skip to content</a>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-border bg-[#100e0e] p-6 lg:flex lg:flex-col" data-testid="desktop-navigation-sidebar">
         <NavLink to="/dashboard" className="mb-12 block" data-testid="sidebar-skipti-logo-link">
           <div className="flex items-center gap-3">
-            <div className="grid size-9 place-items-center border border-[#6e0d25] bg-[#1b0c10]" data-testid="sidebar-logo-mark"><BookOpenText className="size-4 text-[#d7a0b1]" /></div>
+            <div className="grid size-10 place-items-center rounded-xl border border-[#6e0d25] bg-[#1b0c10] shadow-[0_8px_24px_rgba(110,13,37,.16)]" data-testid="sidebar-logo-mark"><BookOpenText className="size-4 text-[#d7a0b1]" /></div>
             <div>
               <p className="font-heading text-2xl leading-none" data-testid="sidebar-product-name">Skipti AI</p>
               <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground" data-testid="sidebar-protocol-label">Context infrastructure</p>
@@ -43,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 data-testid={`sidebar-${item.label.toLowerCase().replaceAll(" ", "-")}-link`}
-                className={({ isActive }) => cn("group flex items-center gap-3 border-l px-3 py-3 text-sm text-muted-foreground transition-[color,background-color,border-color] duration-200 hover:border-[#6e0d25] hover:bg-[#1c1917] hover:text-foreground", isActive ? "border-[#872c4c] bg-[#1c1416] text-foreground" : "border-transparent")}
+                className={({ isActive }) => cn("group flex items-center gap-3 rounded-xl border px-3 py-3 text-sm text-muted-foreground transition-[color,background-color,border-color,transform] duration-200 hover:translate-x-0.5 hover:border-[#4a3039] hover:bg-[#1c1718] hover:text-foreground", isActive ? "border-[#6e3346] bg-[#211519] text-foreground shadow-[0_8px_22px_rgba(0,0,0,.14)]" : "border-transparent")}
               >
                 <Icon className="size-4" />
                 {item.label}
@@ -51,7 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="mt-auto border border-border bg-[#151313] p-4" data-testid="sidebar-owner-card">
+        <div className="mt-auto rounded-2xl border border-border bg-[#151313] p-4 shadow-[0_16px_36px_rgba(0,0,0,.18)]" data-testid="sidebar-owner-card">
           <div className="mb-2 flex items-center justify-between">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground" data-testid="sidebar-owner-mode">Demo owner</span>
             <span className="size-1.5 animate-status-pulse rounded-full bg-emerald-400" data-testid="sidebar-connection-indicator" />
@@ -62,13 +66,19 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-[#0c0a09]/90 px-5 backdrop-blur-xl lg:hidden" data-testid="mobile-header">
         <NavLink to="/dashboard" className="font-heading text-2xl" data-testid="mobile-logo-link">Skipti</NavLink>
-        <NavLink to="/playground" className="border border-[#6e0d25] px-3 py-2 font-mono text-[10px] uppercase tracking-widest" data-testid="mobile-playground-link">Playground</NavLink>
+        <details className="group relative" data-testid="mobile-more-menu">
+          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-[#6e0d25] px-3 py-2 font-mono text-[10px] uppercase tracking-widest marker:hidden" data-testid="mobile-more-menu-button"><Menu className="size-3.5" /> More</summary>
+          <nav className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-border bg-[#151313] p-2 shadow-[0_24px_60px_rgba(0,0,0,.45)]" aria-label="More destinations" data-testid="mobile-more-menu-list">
+            {nav.map((item) => { const Icon = item.icon; return <NavLink key={item.to} to={item.to} className={({ isActive }) => cn("flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-muted-foreground transition-[color,background-color] hover:bg-[#21191b] hover:text-foreground", isActive && "bg-[#26171c] text-foreground")} data-testid={`mobile-menu-${item.label.toLowerCase().replaceAll(" ", "-")}-link`}><Icon className="size-4" />{item.label}</NavLink>; })}
+          </nav>
+        </details>
       </header>
-      <main className="relative z-10 px-5 py-8 lg:ml-72 lg:px-12 lg:py-10" data-testid="app-main-content">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-border bg-[#100e0e]/95 px-2 py-2 backdrop-blur-xl lg:hidden" data-testid="mobile-bottom-navigation">
-        {nav.slice(0, 5).map((item) => {
+      <main id="main-content" className="page-enter relative z-10 mx-auto px-5 pb-28 pt-8 lg:ml-72 lg:max-w-[1800px] lg:px-12 lg:pb-14 lg:pt-12" data-testid="app-main-content">{children}</main>
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 gap-1 border-t border-border bg-[#100e0e]/95 px-2 py-2 backdrop-blur-xl lg:hidden" aria-label="Primary navigation" data-testid="mobile-bottom-navigation">
+        {mobilePrimary.map((item) => {
           const Icon = item.icon;
-          return <NavLink key={item.to} to={item.to} className={({ isActive }) => cn("flex flex-col items-center gap-1 py-1 text-[9px] text-muted-foreground", isActive && "text-[#d7a0b1]")} data-testid={`mobile-${item.label.toLowerCase().replaceAll(" ", "-")}-link`}><Icon className="size-4" />{item.label.split(" ")[0]}</NavLink>;
+          const mobileLabel = item.to === "/context" ? "Core" : item.to === "/share" ? "Pass" : item.label.split(" ")[0];
+          return <NavLink key={item.to} to={item.to} aria-label={item.label} className={({ isActive }) => cn("flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[9px] text-muted-foreground transition-[color,background-color]", isActive && "bg-[#26171c] text-[#e3aabd]")} data-testid={`mobile-${item.label.toLowerCase().replaceAll(" ", "-")}-link`}><Icon className="size-4" />{mobileLabel}</NavLink>;
         })}
       </nav>
     </div>
@@ -77,11 +87,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: ReactNode }) {
   return (
-    <header className="mb-9 flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-end md:justify-between" data-testid={`${eyebrow.toLowerCase().replaceAll(" ", "-")}-page-header`}>
+    <header className="mb-10 flex flex-col gap-7 border-b border-border pb-9 md:flex-row md:items-end md:justify-between lg:mb-12 lg:pb-11" data-testid={`${eyebrow.toLowerCase().replaceAll(" ", "-")}-page-header`}>
       <div className="max-w-3xl">
         <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.28em] text-[#c47a91]" data-testid="page-header-eyebrow">{eyebrow}</p>
-        <h1 className="font-heading text-5xl font-light tracking-tight md:text-6xl" data-testid="page-header-title">{title}</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground" data-testid="page-header-description">{description}</p>
+        <h1 className="font-heading text-[clamp(2.9rem,7vw,5rem)] font-light leading-[.92] tracking-[-.035em]" data-testid="page-header-title">{title}</h1>
+        <p className="mt-5 max-w-2xl text-[15px] leading-7 text-muted-foreground" data-testid="page-header-description">{description}</p>
       </div>
       {action ? <div data-testid="page-header-action">{action}</div> : null}
     </header>
@@ -90,5 +100,5 @@ export function PageHeader({ eyebrow, title, description, action }: { eyebrow: s
 
 export function StatusPill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "brand" | "good" | "warning" }) {
   const tones = { neutral: "border-border text-muted-foreground", brand: "border-[#6e0d25] bg-[#1d0b10] text-[#e0a7b8]", good: "border-emerald-900 bg-emerald-950/40 text-emerald-300", warning: "border-amber-900 bg-amber-950/30 text-amber-300" };
-  return <span className={cn("inline-flex items-center border px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em]", tones[tone])}>{children}</span>;
+  return <span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 font-mono text-[9px] font-medium uppercase tracking-[0.14em]", tones[tone])}>{children}</span>;
 }

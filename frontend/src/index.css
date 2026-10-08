@@ -1,7 +1,6 @@
 @import "@fontsource-variable/cormorant-garamond";
 @import "@fontsource/ibm-plex-sans/400.css";
 @import "@fontsource/ibm-plex-sans/500.css";
-@import "@fontsource-variable/jetbrains-mono";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -11,7 +10,7 @@
 @theme inline {
     --font-heading: 'Cormorant Garamond Variable', serif;
     --font-sans: 'IBM Plex Sans', sans-serif;
-    --font-mono: 'JetBrains Mono Variable', monospace;
+    --font-mono: 'IBM Plex Sans', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -76,49 +75,44 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --radius: 0.18rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --radius: 0.85rem;
+    --sidebar: #100e0e;
+    --sidebar-foreground: #fafaf9;
+    --sidebar-primary: #6e0d25;
+    --sidebar-primary-foreground: #fafaf9;
+    --sidebar-accent: #21191b;
+    --sidebar-accent-foreground: #fafaf9;
+    --sidebar-border: #292524;
+    --sidebar-ring: #b44a6d;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #0c0a09;
+    --foreground: #f5f1ec;
+    --card: #171413;
+    --card-foreground: #f5f1ec;
+    --popover: #171413;
+    --popover-foreground: #f5f1ec;
+    --primary: #761f3d;
+    --primary-foreground: #fffaf6;
+    --secondary: #24201f;
+    --secondary-foreground: #f5f1ec;
+    --muted: #1e1a19;
+    --muted-foreground: #aaa5a8;
+    --accent: #26171c;
+    --accent-foreground: #f5f1ec;
+    --destructive: #9f2943;
+    --border: #302a2c;
+    --input: #3a3234;
+    --ring: #b44a6d;
+    --sidebar: #100e0e;
+    --sidebar-foreground: #f5f1ec;
+    --sidebar-primary: #761f3d;
+    --sidebar-primary-foreground: #fffaf6;
+    --sidebar-accent: #21191b;
+    --sidebar-accent-foreground: #f5f1ec;
+    --sidebar-border: #302a2c;
+    --sidebar-ring: #b44a6d;
 }
 
 @layer base {
@@ -128,11 +122,31 @@
   body {
     @apply bg-background text-foreground antialiased;
     min-width: 320px;
-    background-image: radial-gradient(circle at 82% 4%, rgba(110, 13, 37, 0.13), transparent 28%), radial-gradient(circle at 4% 86%, rgba(74, 4, 4, 0.09), transparent 24%);
+    background-image: radial-gradient(circle at 82% 4%, rgba(118, 31, 61, 0.1), transparent 26%);
+    letter-spacing: -0.008em;
     }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
     }
+  ::selection {
+    background: rgba(180, 74, 109, 0.34);
+    color: #fffaf6;
+  }
+  :where(a, button, input, textarea, select, [role="switch"]):focus-visible {
+    outline: 2px solid #b44a6d;
+    outline-offset: 3px;
+  }
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  content: "";
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
 }
 
 @keyframes status-pulse {
@@ -150,13 +164,37 @@
   to { transform: translateY(540%); }
 }
 
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 .animate-status-pulse { animation: status-pulse 2.2s ease-in-out infinite; }
 .animate-trace-in { animation: trace-in 420ms ease-out both; }
 .animate-scan-line { animation: scan-line 5s linear infinite; }
+.page-enter { animation: page-enter 360ms cubic-bezier(.22, 1, .36, 1) both; }
+
+.skeleton {
+  background: linear-gradient(90deg, #191615 20%, #292324 50%, #191615 80%);
+  background-size: 220% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
 
 .panel {
-  border: 1px solid #292524;
-  background: rgba(28, 25, 23, 0.78);
+  border: 1px solid #302a2c;
+  border-radius: 1rem;
+  background: rgba(23, 20, 19, 0.82);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.panel:hover {
+  border-color: #47383d;
 }
 
 .editorial-grid {
@@ -165,5 +203,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-status-pulse, .animate-trace-in, .animate-scan-line { animation: none; }
+  html { scroll-behavior: auto; }
+  .animate-status-pulse, .animate-trace-in, .animate-scan-line, .page-enter, .skeleton { animation: none; }
 }

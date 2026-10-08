@@ -1,0 +1,97 @@
+{
+  "iteration": 3,
+  "passed": 10,
+  "failed": 0,
+  "flaky": 0,
+  "blocked": 0,
+  "test_error": 0,
+  "retest_needed": false,
+  "bugs": [
+    {
+      "severity": "medium",
+      "criterion": "Responsive mobile navigation",
+      "description": "Two of the five bottom-nav tabs render the identical visible/accessible text 'Persona' (testid mobile-persona-core-link -> /context, and testid mobile-persona-pass-link -> /share). Both tabs are visible and correctly navigate to distinct routes (verified in mobile-bottom-nav-five-tabs-navigate), so navigation itself is not broken, but the duplicate label makes the two destinations indistinguishable by sight or by screen reader (both expose accessible name 'Persona'), which conflicts with the 'navigation has accessible names' and clear 5-tab navigability requirements.",
+      "evidence": "mobile-bottom-nav-five-tabs-navigate run: allTextContents() on the bottom nav returned [\"Overview\",\"Persona\",\"Project\",\"MCP\",\"Persona\"]; getAttribute href/testid confirmed the two 'Persona' entries are mobile-persona-core-link (href=/context) and mobile-persona-pass-link (href=/share). Screenshot: last-tab-persona-pass.png shows both bottom tabs labeled 'Persona'."
+    }
+  ],
+  "action_items": [],
+  "checks": [
+    {
+      "criterion": "Existing functionality preserved",
+      "name": "backend full suite (python -m pytest -q)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "cd /app/backend && python -m pytest -q -p no:cacheprovider -> '32 passed in 87.55s' covering auth/dashboard, persona onboarding, context router, project continuity, Gemini MCP playground, authenticated MCP streamable HTTP, Persona Pass QR/revocation, permission isolation, retention/revocation, guest chat continuity, read-only guest security, exports isolation, and external-context-link routes."
+    },
+    {
+      "criterion": "Premium typography and hierarchy / Disciplined dark design system",
+      "name": "typography-and-design-system",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Home H1 computed fontFamily matched /cormorant/i; body paragraph computed fontFamily matched /ibm plex sans/i; same Cormorant match confirmed on Login heading. document.body backgroundColor = rgb(12,10,9) (charcoal), primary CTA backgroundColor = rgb(118,31,61) (single burgundy accent), primary button borderRadius = 13.6px (rounded)."
+    },
+    {
+      "criterion": "Motion and loading feedback",
+      "name": "motion-and-loading-feedback",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "With prefers-reduced-motion:reduce emulated and /api/projects delayed 1200ms via route interception, Project Holders list showed a visible skeleton/animate-pulse placeholder before the real 'Skipti AI' project card rendered; both skeleton and loaded states screenshotted."
+    },
+    {
+      "criterion": "Public visual craft and proof",
+      "name": "public-home-visual-craft-and-proof",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Home renders heading 'Your context...', primary CTA link 'Enter live demo', and proof metrics text 'MCP tools' / 'Verified checks' / 'Isolated projects'; page.evaluate found a background-image or <img> referencing static.prod-images.emergentagent.com (custom Skipti artwork, not stock photography)."
+    },
+    {
+      "criterion": "Responsive mobile navigation",
+      "name": "mobile-bottom-nav-five-tabs-navigate",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "At 390x844, all 5 bottom tabs (mobile-overview-link, mobile-persona-core-link, mobile-project-holders-link, mobile-mcp-playground-link, mobile-persona-pass-link) were visible and each click navigated to its distinct expected route (/dashboard, /context, /projects, /playground, /share). See bugs[] for a duplicate-label defect found incidentally while capturing tab text."
+    },
+    {
+      "criterion": "Responsive mobile navigation",
+      "name": "mobile-more-menu-and-toast-nonblocking",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "After demo login, bottom nav 'Overview' tab remained visible/boxed while the success toast was showing (toast does not overlap bottom nav bounding box); after the toast cleared, the native <details>/<summary> More menu (data-testid mobile-more-menu-button/list, aria-label 'More destinations') opened and exposed 'Interview' and 'Settings'; clicking Settings navigated to /settings."
+    },
+    {
+      "criterion": "Accessibility fundamentals",
+      "name": "accessibility-fundamentals",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "On Login, a single Tab-to-focus on the demo-login page focused the primary button (screenshot captured); after entering the owner workspace, pressing Tab surfaced a visible 'Skip to content' link (getByRole link) which, when clicked, focused a #main-content/[role=main] target. At mobile viewport, focusing the More button with keyboard and pressing Enter opened the native details/summary menu (data-testid mobile-more-menu-list) whose aria-label 'More destinations' confirms an accessible name."
+    },
+    {
+      "criterion": "Polished metadata and edge states",
+      "name": "metadata-and-404-edge-state",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Home <link rel=icon> href='/skipti-mark.svg' (custom Skipti favicon); og:image, twitter:image and og:title meta tags all present and non-empty (confirmed also via curl: og:title 'Skipti AI — Your context. Any AI. Temporarily.', og:image/twitter:image both static.prod-images.emergentagent.com). Navigating to an unknown SPA route /tscheck-unknown-route-xyz-123 rendered a visible 404/not-found page instead of a blank screen."
+    },
+    {
+      "criterion": "Existing functionality preserved",
+      "name": "owner-login-shows-seeded-dashboard-preview",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check (name-only) against the public preview URL: demo login + seeded dashboard stats (Persona revision, Approved entries, Project holders counts) render correctly."
+    },
+    {
+      "criterion": "Existing functionality preserved",
+      "name": "persona-pass-redeem-and-revoke",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check (name-only): QR Persona Pass creation, guest redemption, replay-rejection (410), and owner revocation (guest blocked 401 afterward) all still function. Console shows the expected 410/401 responses asserted by the test, not errors."
+    },
+    {
+      "criterion": "Existing functionality preserved",
+      "name": "persona-interview-and-context-entry",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check (name-only): adaptive interview progression and a new Context (Persona) entry create/delete cycle both still function."
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import Playground from "@/pages/Playground";
 import Share from "@/pages/Share";
 import Connect from "@/pages/Connect";
 import Settings from "@/pages/Settings";
+import NotFound from "@/pages/NotFound";
 
 // One <Route> per page in src/pages; BrowserRouter already wraps this in main.tsx.
 export default function App() {
@@ -28,7 +29,7 @@ export default function App() {
       <Route path="/share" element={<Share />} />
       <Route path="/connect/:token" element={<Connect />} />
       <Route path="/settings" element={<Settings />} />
-      <Route path="*" element={<Home />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
