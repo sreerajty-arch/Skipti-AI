@@ -1,0 +1,118 @@
+{
+  "iteration": 2,
+  "passed": 15,
+  "failed": 0,
+  "flaky": 0,
+  "blocked": 0,
+  "test_error": 0,
+  "retest_needed": false,
+  "bugs": [],
+  "action_items": [],
+  "checks": [
+    {
+      "criterion": "Cookie-less plain-text AI context link",
+      "name": "test_tscheck_external_context_fetch.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Owner POST /api/shares -> 201; brand-new cookie-less httpx client GET /api/connect/{token}/context -> 200, content-type text/plain, body starts with 'SKIPTI PERSONA CONTEXT', Cache-Control contains 'no-store', X-Robots-Tag contains 'noindex'."
+    },
+    {
+      "criterion": "Supabase-backed token status",
+      "name": "test_tscheck_external_token_status.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/connect/{bogus-token}/context -> 404 body exactly 'Invalid Skipti session.'. Revoked session -> 410 body exactly 'The Persona Holder has ended this session.'. Expiry forced deterministically via direct Supabase UPDATE of temporary_sessions.expires_at (per documented spec deviation) -> GET -> 410 body exactly 'This Skipti session has expired.'."
+    },
+    {
+      "criterion": "Category permission isolation",
+      "name": "test_tscheck_external_category_isolation.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Pass created with permissions=['goals'] only; GET /api/connect/{token}/context -> 200 contains '## Goals' and the Goals entry value, but contains no '## Hardware'/'## Tools'/'## AI preferences'/'## Technical skills' section and none of 'Lenovo LOQ', 'VS Code', or the AI-preferences value string."
+    },
+    {
+      "criterion": "Query-based relevance filtering",
+      "name": "test_tscheck_external_query_relevance.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "No-query fetch shows Goals+Technical skills sections; ?q=python -> only the Python skill entry (Goals section absent); ?q=zzqqxx-nonexistent-topic -> body contains exact 'No relevant approved context was found for this query.'. Second test: a duplicate Goals entry (same category+value) created via POST /api/persona/entries is still shown only once (count==1) in the ?q=machine%20learning response, proving rank_external_entries dedupe; no LLM call path confirmed by code (services.skipti.rank_external_entries is pure local scoring with zero calls into services.ai)."
+    },
+    {
+      "criterion": "External fetch audit logging",
+      "name": "test_tscheck_external_audit_log.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "After GET /api/connect/{token}/context?q=tscheck-audit-query-marker, a direct Supabase read of context_access_logs (ordered by created_at desc, filtered by session_id) returned a row with source='external_fetch', session_id matching the share id, query='tscheck-audit-query-marker', categories_requested containing 'Goals', entry_ids_returned as a list, a created_at timestamp, and the raw guest token string absent from the serialized row."
+    },
+    {
+      "criterion": "Persona Pass UI AI link controls",
+      "name": "persona-pass-share-ai-link-controls",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "On /share: generated a pass, confirmed share-created-status shows 'Ready' with an expiry countdown, clicked share-copy-ai-link-button (toast 'Plain-text AI link copied'), verified the backend-provided ai_context_url served 200 SKIPTI PERSONA CONTEXT text, clicked share-created-revoke-button (toast confirms revoke), then re-fetched the same ai_context_url and confirmed it now returns 410."
+    },
+    {
+      "criterion": "Connect page AI link controls",
+      "name": "connect-page-ai-link-controls",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Pre-redemption /connect/{token} showed connect-link-status with server-derived 'active' status/countdown; clicked connect-copy-ai-link-button (toast 'Plain-text AI link copied'); clicked connect-redeem-button -> navigated to /connect/session; connected-ai-page rendered, a starter prompt was sent and a Gemini chat message rendered, confirming existing redemption and temporary chat remain functional."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "test_tscheck_auth_dashboard.py + full existing suite",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Full backend suite (32 tests across auth/dashboard, persona onboarding, context router, project continuity, Gemini MCP playground, authenticated MCP streamable HTTP, Persona Pass QR/revocation, permission isolation, retention/revocation, guest chat continuity, read-only guest security, exports isolation, plus the 5 new external-context-link files) ran clean: 'python -m pytest -q' -> 32 passed in 67.84s after Supabase dual-write additions."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "owner-login-shows-seeded-dashboard-preview",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check against the public preview URL https://skipti-context.preview.emergentagent.com: demo login + seeded dashboard stats rendered correctly."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "persona-pass-redeem-and-revoke",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: QR pass generation, redemption, replay-rejection (410), and owner revocation (guest blocked with 401 afterward) all still function."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "persona-pass-chat-trace-and-end-session-mobile",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: live guest Gemini chat with trace panel, multi-turn continuity, and end-session all still function on mobile viewport."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "test_tscheck_mcp_streamable_http.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Real MCP SDK streamablehttp_client against /mcp/ with Bearer skipti-demo-mcp-2026: initialize succeeded, list_tools() included get_project_progress/search_context, both tool calls returned expected payloads -- authenticated MCP initialization continues working."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "context-router-minimum-disclosure",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check (name-only, no re-send of script): context router query flow on /context still renders selected/excluded/token counts."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "project-holder-approve-checkpoint",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check (name-only): proposal creation + approval + checkpoint revision bump on /projects/{id} still works."
+    },
+    {
+      "criterion": "Existing flows remain intact",
+      "name": "playground-gemini-response-with-trace",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check (name-only): Gemini MCP playground still returns an answer with trace/selected-context panels."
+    }
+  ]
+}

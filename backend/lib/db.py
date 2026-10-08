@@ -53,6 +53,12 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel([("session_hash", ASCENDING)], name="session_hash", unique=True),
         IndexModel([("expires_at", ASCENDING)], name="expires_at_ttl", expireAfterSeconds=0),
     ],
+    "guest_chat_messages": [
+        IndexModel([("id", ASCENDING)], name="id", unique=True),
+        IndexModel([("session_id", ASCENDING), ("created_at", ASCENDING)], name="session_created"),
+        IndexModel([("grant_id", ASCENDING), ("created_at", DESCENDING)], name="grant_created"),
+        IndexModel([("expires_at", ASCENDING)], name="expires_at_ttl", expireAfterSeconds=0),
+    ],
     "context_access_logs": [IndexModel([("owner_id", ASCENDING), ("created_at", DESCENDING)], name="owner_created")],
 }
 

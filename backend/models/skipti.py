@@ -202,6 +202,7 @@ class ShareCreate(BaseModel):
     project_id: str | None = None
     permissions: list[str] = Field(min_length=1)
     duration_minutes: Literal[5, 15, 30, 60]
+    retain_chat_until_expiry: bool = False
 
 
 class ShareGrant(BaseModel):
@@ -212,21 +213,64 @@ class ShareGrant(BaseModel):
     revoked_at: datetime | None = None
     redeemed_at: datetime | None = None
     status: str
+    retain_chat_until_expiry: bool = False
 
 
 class ShareCreated(ShareGrant):
     connect_url: str
     qr_data_uri: str
+    ai_context_url: str
+
+
+class ExternalContextLink(BaseModel):
+    ai_context_url: str
+    status: str
+    expires_at: datetime
 
 
 class RedeemRequest(BaseModel):
     token: str = Field(min_length=20, max_length=300)
 
 
+class GuestChatMessage(BaseModel):
+    id: str
+    role: Literal["user", "assistant"]
+    content: str
+    created_at: datetime
+
+
+class GuestProjectView(BaseModel):
+    id: str
+    name: str
+    revision: int
+    description: str | None = None
+    stack: list[str] = Field(default_factory=list)
+    completed: list[str] = Field(default_factory=list)
+    in_progress: list[str] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
+    decisions: list[str] = Field(default_factory=list)
+    next_steps: list[str] = Field(default_factory=list)
+
+
 class GuestContext(BaseModel):
     grant: ShareGrant
     persona_entries: list[PersonaEntry]
-    project: Project | None = None
+    project: GuestProjectView | None = None
+    recent_messages: list[GuestChatMessage] = Field(default_factory=list)
+    remaining_seconds: int
+
+
+class GuestChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class GuestChatResponse(BaseModel):
+    answer: str
+    retrieval: ContextSearchResponse
+    provider: str
+    model: str
+    remaining_seconds: int
+    message: GuestChatMessage
 
 
 class Overview(BaseModel):

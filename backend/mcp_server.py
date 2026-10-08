@@ -16,6 +16,7 @@ from services.skipti import (
     get_project,
     normalize_document,
     restore_checkpoint,
+    revoke_share,
     search_context as search_context_service,
 )
 
@@ -180,10 +181,7 @@ async def get_session_status() -> dict[str, Any]:
 
 @mcp.tool(description="Revoke a temporary Persona Pass by identifier.")
 async def revoke_session(grant_id: str) -> dict[str, Any]:
-    now = utc_now()
-    result = await db.temporary_grants.update_one({"id": grant_id, "owner_id": OWNER_ID}, {"$set": {"revoked_at": now}})
-    await db.guest_sessions.update_many({"grant_id": grant_id}, {"$set": {"revoked_at": now}})
-    return {"revoked": bool(result.matched_count), "grant_id": grant_id}
+    return {"revoked": await revoke_share(OWNER_ID, grant_id), "grant_id": grant_id}
 
 
 mcp_app = mcp.streamable_http_app()

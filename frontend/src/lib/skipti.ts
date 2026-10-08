@@ -119,17 +119,56 @@ export interface ShareGrant {
   revoked_at: string | null;
   redeemed_at: string | null;
   status: string;
+  retain_chat_until_expiry: boolean;
 }
 
 export interface ShareCreated extends ShareGrant {
   connect_url: string;
   qr_data_uri: string;
+  ai_context_url: string;
+}
+
+export interface ExternalContextLink {
+  ai_context_url: string;
+  status: string;
+  expires_at: string;
+}
+
+export interface GuestChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
+export interface GuestProjectView {
+  id: string;
+  name: string;
+  revision: number;
+  description: string | null;
+  stack: string[];
+  completed: string[];
+  in_progress: string[];
+  blockers: string[];
+  decisions: string[];
+  next_steps: string[];
 }
 
 export interface GuestContext {
   grant: ShareGrant;
   persona_entries: PersonaEntry[];
-  project: Project | null;
+  project: GuestProjectView | null;
+  recent_messages: GuestChatMessage[];
+  remaining_seconds: number;
+}
+
+export interface GuestChatResponse {
+  answer: string;
+  retrieval: ContextSearchResponse;
+  provider: string;
+  model: string;
+  remaining_seconds: number;
+  message: GuestChatMessage;
 }
 
 export interface Overview {

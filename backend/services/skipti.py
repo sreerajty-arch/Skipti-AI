@@ -16,6 +16,7 @@ from lib.db import db
 from models.skipti import (
     ContextSearchResponse,
     ContextSelection,
+    GuestChatMessage,
     PersonaEntry,
     ProgressProposal,
     Project,
@@ -83,16 +84,59 @@ def _tokens(text: str) -> set[str]:
     return {word.strip(".,!?()[]{}:;\"'").lower() for word in text.split() if len(word) > 2}
 
 
-async def search_context(owner_id: str, query: str, project_id: str | None, max_entries: int) -> ContextSearchResponse:
+def context_relevance_score(category: str, label: str, value: str, query: str) -> int:
     query_tokens = _tokens(query)
-    persona_entries = await get_persona_entries(owner_id)
+    haystack = _tokens(f"{category} {label} {value}")
+    overlap = len(query_tokens & haystack)
+    return overlap * 5 + (2 if category.lower() in query.lower() else 0)
+
+
+def rank_external_entries(entries: list[dict[str, Any]], query: str, max_entries: int = 10) -> list[dict[str, Any]]:
+    ranked: list[tuple[int, dict[str, Any]]] = []
+    seen: set[tuple[str, str]] = set()
+    for entry in entries:
+        dedupe_key = (str(entry["category"]).strip().lower(), str(entry["value"]).strip().lower())
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        score = context_relevance_score(str(entry["category"]), str(entry["label"]), str(entry["value"]), query)
+        if score > 0:
+            ranked.append((score, entry))
+    ranked.sort(key=lambda item: item[0], reverse=True)
+    return [entry for _, entry in ranked[:max_entries]]
+
+
+def _persona_entry_allowed(entry: PersonaEntry, permissions: set[str]) -> bool:
+    if "general_profile" in permissions:
+        return True
+    category = entry.category.lower()
+    return (
+        ("goals" in permissions and (entry.entry_type == "goal" or "goal" in category))
+        or ("skills" in permissions and ("skill" in category or "technical" in category))
+        or ("ai_preferences" in permissions and (entry.entry_type == "preference" or "preference" in category or "response style" in category))
+    )
+
+
+async def get_permitted_persona_entries(owner_id: str, permissions: set[str]) -> list[PersonaEntry]:
+    entries = await get_persona_entries(owner_id)
+    return [entry for entry in entries if entry.sensitivity != "sensitive" and _persona_entry_allowed(entry, permissions)]
+
+
+async def search_context(
+    owner_id: str,
+    query: str,
+    project_id: str | None,
+    max_entries: int,
+    permissions: set[str] | None = None,
+) -> ContextSearchResponse:
+    query_tokens = _tokens(query)
+    persona_entries = await get_persona_entries(owner_id) if permissions is None else await get_permitted_persona_entries(owner_id, permissions)
     candidates: list[tuple[int, ContextSelection]] = []
     for entry in persona_entries:
         if entry.sensitivity == "sensitive":
             continue
-        haystack = _tokens(f"{entry.category} {entry.label} {entry.value}")
-        overlap = len(query_tokens & haystack)
-        score = overlap * 5 + (2 if entry.category.lower() in query.lower() else 0)
+        overlap = len(query_tokens & _tokens(f"{entry.category} {entry.label} {entry.value}"))
+        score = context_relevance_score(entry.category, entry.label, entry.value, query)
         candidates.append(
             (
                 score,
@@ -110,15 +154,17 @@ async def search_context(owner_id: str, query: str, project_id: str | None, max_
     if project_id:
         project = await get_project(owner_id, project_id)
         project_revision = project.revision
-        project_fields = {
-            "Project overview": project.description,
-            "Technical stack": ", ".join(project.stack),
-            "Completed": "; ".join(project.completed),
-            "In progress": "; ".join(project.in_progress),
-            "Blockers": "; ".join(project.blockers),
-            "Decisions": "; ".join(project.decisions),
-            "Next steps": "; ".join(project.next_steps),
-        }
+        project_fields: dict[str, str] = {}
+        if permissions is None or "project" in permissions:
+            project_fields.update({"Project overview": project.description, "Technical stack": ", ".join(project.stack)})
+        if permissions is None or "project_progress" in permissions:
+            project_fields.update({
+                "Completed": "; ".join(project.completed),
+                "In progress": "; ".join(project.in_progress),
+                "Blockers": "; ".join(project.blockers),
+                "Decisions": "; ".join(project.decisions),
+                "Next steps": "; ".join(project.next_steps),
+            })
         for label, value in project_fields.items():
             if not value:
                 continue
@@ -139,7 +185,7 @@ async def search_context(owner_id: str, query: str, project_id: str | None, max_
             )
     candidates.sort(key=lambda item: item[0], reverse=True)
     relevant = [item for item in candidates if item[0] > 0]
-    if not relevant:
+    if not relevant and permissions is None:
         relevant = candidates[: min(2, len(candidates))]
     selected = [item[1] for item in relevant[:max_entries]]
     total_chars = sum(len(item.value) + len(item.label) for item in selected)
@@ -268,9 +314,16 @@ async def ask_gemini(owner_id: str, query: str, project_id: str | None, max_entr
     return answer, retrieval
 
 
-async def create_share(owner_id: str, project_id: str | None, permissions: list[str], duration_minutes: int) -> tuple[ShareGrant, str, str]:
+async def create_share(
+    owner_id: str,
+    project_id: str | None,
+    permissions: list[str],
+    duration_minutes: int,
+    retain_chat_until_expiry: bool,
+) -> tuple[ShareGrant, str, str]:
+    project: Project | None = None
     if project_id:
-        await get_project(owner_id, project_id)
+        project = await get_project(owner_id, project_id)
     allowed = {"general_profile", "goals", "skills", "ai_preferences", "project", "project_progress"}
     sanitized = sorted(set(permissions) & allowed)
     if not sanitized:
@@ -287,15 +340,43 @@ async def create_share(owner_id: str, project_id: str | None, permissions: list[
         "expires_at": expires_at,
         "revoked_at": None,
         "redeemed_at": None,
+        "retain_chat_until_expiry": retain_chat_until_expiry,
         "created_at": utc_now(),
     }
     await db.temporary_grants.insert_one(document)
+    try:
+        from lib.supabase_db import sync_external_session
+
+        all_entries = await get_persona_entries(owner_id)
+        permitted_entries = await get_permitted_persona_entries(owner_id, set(sanitized))
+        persona_meta = await db.personas.find_one({"owner_id": owner_id}) or {"revision": 1}
+        project_payload = None
+        if project:
+            project_payload = project.model_dump()
+            project_payload["state"] = project.model_dump(mode="json")
+        await sync_external_session(
+            document,
+            persona_meta.get("revision", 1),
+            [entry.model_dump() for entry in all_entries],
+            sorted({entry.category for entry in permitted_entries}),
+            project_payload,
+        )
+    except Exception as exc:
+        await db.temporary_grants.delete_one({"id": grant_id})
+        raise HTTPException(status_code=503, detail="Persona Pass storage is temporarily unavailable") from exc
     url = f"{os.environ.get('APP_URL', '').rstrip('/')}/connect/{token}"
     qr = qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage, box_size=8, border=2)
     output = io.BytesIO()
     qr.save(output)
     data_uri = "data:image/svg+xml;base64," + base64.b64encode(output.getvalue()).decode()
-    grant = ShareGrant(id=grant_id, project_id=project_id, permissions=sanitized, expires_at=expires_at, status="ready")
+    grant = ShareGrant(
+        id=grant_id,
+        project_id=project_id,
+        permissions=sanitized,
+        expires_at=expires_at,
+        status="ready",
+        retain_chat_until_expiry=retain_chat_until_expiry,
+    )
     return grant, token, data_uri
 
 
@@ -327,21 +408,122 @@ async def redeem_share(token: str) -> tuple[str, ShareGrant]:
         expires_at=document["expires_at"],
         redeemed_at=document["redeemed_at"],
         status="active",
+        retain_chat_until_expiry=document.get("retain_chat_until_expiry", False),
     )
     return raw_session, grant
 
 
 async def resolve_guest_session(token: str | None) -> dict[str, Any] | None:
+    resolved, status = await get_guest_session_state(token)
+    return resolved if status == "active" else None
+
+
+async def get_guest_session_state(token: str | None) -> tuple[dict[str, Any] | None, str]:
     if not token:
-        return None
+        return None, "invalid"
     now = utc_now()
-    session = await db.guest_sessions.find_one({"session_hash": hash_token(token), "expires_at": {"$gt": now}, "revoked_at": None})
+    session = await db.guest_sessions.find_one({"session_hash": hash_token(token)})
     if not session:
-        return None
-    grant = await db.temporary_grants.find_one({"id": session["grant_id"], "expires_at": {"$gt": now}, "revoked_at": None})
+        return None, "invalid"
+    grant = await db.temporary_grants.find_one({"id": session["grant_id"]})
     if not grant:
-        return None
-    return {"session": normalize_document(session), "grant": normalize_document(grant)}
+        return None, "invalid"
+    session = normalize_document(session)
+    grant = normalize_document(grant)
+    if session.get("revoked_at") or grant.get("revoked_at"):
+        return {"session": session, "grant": grant}, "revoked"
+    if session["expires_at"] <= now or grant["expires_at"] <= now:
+        return {"session": session, "grant": grant}, "expired"
+    return {"session": session, "grant": grant}, "active"
+
+
+def guest_status_error(status: str) -> HTTPException:
+    messages = {
+        "revoked": "The Persona Holder has ended this session.",
+        "expired": "This Skipti session has expired.",
+        "invalid": "This Skipti connection is invalid.",
+    }
+    return HTTPException(status_code=401, detail={"code": status, "message": messages.get(status, messages["invalid"])})
+
+
+async def ask_guest_gemini(token: str | None, message: str) -> tuple[str, ContextSearchResponse, GuestChatMessage, int]:
+    resolved, status = await get_guest_session_state(token)
+    if not resolved or status != "active":
+        raise guest_status_error(status)
+    session = resolved["session"]
+    grant = resolved["grant"]
+    now = utc_now()
+    recent_count = await db.guest_chat_messages.count_documents(
+        {"session_id": session["id"], "role": "user", "created_at": {"$gt": now - timedelta(minutes=1)}}
+    )
+    total_count = await db.guest_chat_messages.count_documents({"session_id": session["id"], "role": "user"})
+    if recent_count >= 8 or total_count >= 60:
+        raise HTTPException(status_code=429, detail="This temporary session has reached its chat limit. Please wait or create a new pass.")
+    permissions = set(grant["permissions"])
+    retrieval = await search_context(
+        grant["owner_id"],
+        message,
+        grant.get("project_id"),
+        7,
+        permissions=permissions,
+    )
+    history_docs = await db.guest_chat_messages.find({"session_id": session["id"]}).sort("created_at", -1).to_list(12)
+    history = [
+        {"role": doc["role"], "content": doc["content"]}
+        for doc in reversed(history_docs)
+    ]
+    answer = await answer_with_context(
+        message,
+        [item.model_dump() for item in retrieval.selected],
+        session_id=f"guest-{session['id']}",
+        history=history,
+        temporary_guest=True,
+    )
+    # Revalidate after the model call so a revocation during generation cannot release new protected output.
+    _, final_status = await get_guest_session_state(token)
+    if final_status != "active":
+        raise guest_status_error(final_status)
+    user_doc = {
+        "id": str(uuid4()), "grant_id": grant["id"], "session_id": session["id"],
+        "role": "user", "content": message, "created_at": now, "expires_at": grant["expires_at"],
+    }
+    assistant_doc = {
+        "id": str(uuid4()), "grant_id": grant["id"], "session_id": session["id"],
+        "role": "assistant", "content": answer, "created_at": utc_now(), "expires_at": grant["expires_at"],
+        "selected_context_ids": [item.id for item in retrieval.selected],
+    }
+    await db.guest_chat_messages.insert_many([user_doc, assistant_doc])
+    remaining = max(0, int((grant["expires_at"] - utc_now()).total_seconds()))
+    return answer, retrieval, GuestChatMessage(**assistant_doc), remaining
+
+
+async def end_guest_session(token: str | None) -> bool:
+    resolved, status = await get_guest_session_state(token)
+    if not resolved:
+        return False
+    session = resolved["session"]
+    grant = resolved["grant"]
+    await db.guest_sessions.update_one(
+        {"id": session["id"]}, {"$set": {"revoked_at": utc_now(), "ended_by_guest_at": utc_now()}}
+    )
+    if not grant.get("retain_chat_until_expiry", False):
+        await db.guest_chat_messages.delete_many({"session_id": session["id"]})
+    return status == "active"
+
+
+async def revoke_share(owner_id: str, grant_id: str) -> bool:
+    grant = await db.temporary_grants.find_one({"id": grant_id, "owner_id": owner_id})
+    if not grant:
+        return False
+    now = utc_now()
+    await db.temporary_grants.update_one({"id": grant_id, "owner_id": owner_id}, {"$set": {"revoked_at": now}})
+    await db.guest_sessions.update_many({"grant_id": grant_id}, {"$set": {"revoked_at": now}})
+    from lib.supabase_db import set_external_session_revoked
+
+    await set_external_session_revoked(grant_id, owner_id, now)
+    if not grant.get("retain_chat_until_expiry", False):
+        await db.guest_chat_messages.delete_many({"grant_id": grant_id})
+    return True
 
 
 async def share_view(document: dict[str, Any]) -> ShareGrant:
@@ -355,4 +537,5 @@ async def share_view(document: dict[str, Any]) -> ShareGrant:
         revoked_at=document.get("revoked_at"),
         redeemed_at=document.get("redeemed_at"),
         status=status,
+        retain_chat_until_expiry=document.get("retain_chat_until_expiry", False),
     )
