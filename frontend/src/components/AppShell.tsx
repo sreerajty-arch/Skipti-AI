@@ -12,6 +12,9 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { apiGet } from "@/lib/api";
+import type { UserView } from "@/lib/skipti";
 
 const nav = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -26,6 +29,8 @@ const nav = [
 const mobilePrimary = [nav[0], nav[2], nav[3], nav[4], nav[5]];
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const account = useQuery({ queryKey: ["auth", "me"], queryFn: () => apiGet<UserView>("/auth/me"), staleTime: 30_000 });
+  const user = account.data;
   return (
     <div className="min-h-screen bg-background text-foreground" data-testid="skipti-app-shell">
       <a href="#main-content" className="fixed left-4 top-3 z-[80] -translate-y-20 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-[transform] focus:translate-y-0" data-testid="skip-to-content-link">Skip to content</a>
@@ -57,11 +62,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="mt-auto rounded-2xl border border-border bg-[#151313] p-4 shadow-[0_16px_36px_rgba(0,0,0,.18)]" data-testid="sidebar-owner-card">
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground" data-testid="sidebar-owner-mode">Demo owner</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground" data-testid="sidebar-owner-mode">Secure account</span>
             <span className="size-1.5 animate-status-pulse rounded-full bg-emerald-400" data-testid="sidebar-connection-indicator" />
           </div>
-          <p className="text-sm font-medium" data-testid="sidebar-owner-name">Alex Morgan</p>
-          <p className="mt-1 text-xs text-muted-foreground" data-testid="sidebar-owner-email">demo@skipti.ai</p>
+          <p className="text-sm font-medium" data-testid="sidebar-owner-name">{user?.display_name ?? "Loading account…"}</p>
+          <p className="mt-1 truncate text-xs text-muted-foreground" data-testid="sidebar-owner-email">{user?.email ?? ""}</p>
         </div>
       </aside>
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-[#0c0a09]/90 px-5 backdrop-blur-xl lg:hidden" data-testid="mobile-header">

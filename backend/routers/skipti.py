@@ -3,15 +3,18 @@ from datetime import timezone
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import PlainTextResponse
 
 from lib.db import db
 from models.skipti import (
     ApproveProposalRequest,
+    AuthCredentials,
+    AuthResponse,
     ContextSearchRequest,
     ContextSearchResponse,
     ExportResponse,
+    DownloadResponse,
     ExternalContextLink,
     GuestChatRequest,
     GuestChatResponse,
@@ -22,6 +25,7 @@ from models.skipti import (
     InterviewCompleteRequest,
     InterviewStart,
     MessageResponse,
+    McpTokenResponse,
     Overview,
     PersonaEntry,
     PersonaEntryCreate,
@@ -35,23 +39,22 @@ from models.skipti import (
     ProjectCheckpoint,
     ProjectCreate,
     ProjectDetail,
+    ProjectFile,
+    ProjectFilesResponse,
     RedeemRequest,
     RestoreRequest,
     ShareCreate,
     ShareCreated,
     ShareGrant,
+    SignupRequest,
     UserView,
     utc_now,
 )
 from services.ai import MODEL_NAME, MODEL_PROVIDER, extract_interview_answer
 from services.skipti import (
-    OWNER_EMAIL,
-    OWNER_ID,
-    OWNER_NAME,
     approve_progress_proposal,
     ask_gemini,
     ask_guest_gemini,
-    create_owner_session,
     create_progress_proposal,
     create_share,
     end_guest_session,
@@ -64,15 +67,14 @@ from services.skipti import (
     redeem_share,
     resolve_guest_session,
     revoke_share,
-    resolve_owner_session,
     restore_checkpoint,
     search_context,
     share_view,
 )
+from lib.auth import clear_session_cookies, establish_session, get_user_view, require_user, supabase_login, supabase_signup
 
 
 router = APIRouter()
-DEMO_USER = UserView(id=OWNER_ID, email=OWNER_EMAIL, display_name=OWNER_NAME)
 INTERVIEW_BANK = [
     ("Current situation", "What are you currently studying, building, or responsible for?"),
     ("Goals", "What outcome would make the next three months feel successful?"),
@@ -83,34 +85,48 @@ INTERVIEW_BANK = [
 ]
 
 
-async def require_owner(request: Request) -> str:
-    owner_id = await resolve_owner_session(request.cookies.get("skipti_owner"))
-    if not owner_id:
-        raise HTTPException(status_code=401, detail="Owner session required")
-    return owner_id
+async def require_owner(request: Request, response: Response) -> str:
+    return await require_user(request, response)
 
 
-@router.post("/auth/demo", response_model=UserView)
-async def demo_login(response: Response):
-    token = await create_owner_session()
-    response.set_cookie("skipti_owner", token, httponly=True, samesite="lax", max_age=604800, path="/")
-    return DEMO_USER
+@router.post("/auth/signup", response_model=AuthResponse, status_code=201)
+async def signup(payload: SignupRequest, response: Response):
+    result = await supabase_signup(payload.email.strip().lower(), payload.password, payload.display_name.strip())
+    user = await establish_session(response, result)
+    return AuthResponse(
+        user=user,
+        message="Account created" if user else "Check your email to confirm your account, then sign in.",
+        requires_confirmation=user is None,
+    )
+
+
+@router.post("/auth/login", response_model=AuthResponse)
+async def login(payload: AuthCredentials, response: Response):
+    result = await supabase_login(payload.email.strip().lower(), payload.password)
+    user = await establish_session(response, result)
+    return AuthResponse(user=user, message="Signed in")
 
 
 @router.get("/auth/me", response_model=UserView)
 async def auth_me(owner_id: str = Depends(require_owner)):
-    return DEMO_USER
+    return await get_user_view(owner_id)
 
 
 @router.post("/auth/logout", response_model=MessageResponse)
 async def logout(request: Request, response: Response):
-    token = request.cookies.get("skipti_owner")
-    if token:
-        from services.skipti import hash_token
-
-        await db.auth_sessions.delete_one({"token_hash": hash_token(token)})
-    response.delete_cookie("skipti_owner", path="/")
+    clear_session_cookies(response)
     return MessageResponse(message="Signed out")
+
+
+@router.post("/auth/mcp-token", response_model=McpTokenResponse, status_code=201)
+async def create_mcp_token(owner_id: str = Depends(require_owner)):
+    import secrets
+    from services.skipti import hash_token
+
+    raw = f"skp_{secrets.token_urlsafe(32)}"
+    await db.mcp_tokens.update_many({"owner_id": owner_id, "revoked_at": None}, {"$set": {"revoked_at": utc_now()}})
+    await db.mcp_tokens.insert_one({"id": str(uuid4()), "owner_id": owner_id, "token_hash": hash_token(raw), "created_at": utc_now(), "revoked_at": None})
+    return McpTokenResponse(token=raw, message="Copy this token now; it will not be shown again.")
 
 
 @router.get("/overview", response_model=Overview)
@@ -120,7 +136,7 @@ async def overview(owner_id: str = Depends(require_owner)):
     persona = await db.personas.find_one({"owner_id": owner_id}) or {"revision": 1}
     active_shares = await db.temporary_grants.count_documents({"owner_id": owner_id, "expires_at": {"$gt": utc_now()}, "revoked_at": None})
     return Overview(
-        owner=DEMO_USER,
+        owner=await get_user_view(owner_id),
         persona_revision=persona.get("revision", 1),
         persona_entries=len(entries),
         project_count=len(projects),
@@ -136,7 +152,7 @@ async def overview(owner_id: str = Depends(require_owner)):
 async def persona(owner_id: str = Depends(require_owner)):
     entries = await get_persona_entries(owner_id, approved_only=False)
     meta = await db.personas.find_one({"owner_id": owner_id}) or {"revision": 1}
-    return PersonaView(owner=DEMO_USER, revision=meta.get("revision", 1), entries=entries, categories=sorted({entry.category for entry in entries}))
+    return PersonaView(owner=await get_user_view(owner_id), revision=meta.get("revision", 1), entries=entries, categories=sorted({entry.category for entry in entries}))
 
 
 @router.post("/persona/entries", response_model=PersonaEntry, status_code=201)
@@ -283,6 +299,98 @@ async def project_detail(project_id: str, owner_id: str = Depends(require_owner)
     context_docs = await db.project_context_entries.find({"owner_id": owner_id, "project_id": project_id}).to_list(200)
     pending = await db.project_update_proposals.count_documents({"owner_id": owner_id, "project_id": project_id, "status": "pending_approval"})
     return ProjectDetail(project=project, context_entries=[PersonaEntry(**normalize_document(doc)) for doc in context_docs], pending_proposals=pending)
+
+
+@router.get("/projects/{project_id}/files", response_model=ProjectFilesResponse)
+async def list_project_files(project_id: str, owner_id: str = Depends(require_owner)):
+    await get_project(owner_id, project_id)
+    docs = await db.project_files.find({"owner_id": owner_id, "project_id": project_id}).sort("created_at", -1).to_list(500)
+    files = [ProjectFile(**normalize_document(doc)) for doc in docs]
+    return ProjectFilesResponse(files=files, total_bytes=sum(item.size for item in files if item.mode == "stored"))
+
+
+@router.post("/projects/{project_id}/files", response_model=ProjectFilesResponse, status_code=201)
+async def upload_project_folder(
+    project_id: str,
+    mode: str = Form(...),
+    files: list[UploadFile] = File(...),
+    owner_id: str = Depends(require_owner),
+):
+    await get_project(owner_id, project_id)
+    if mode not in {"stored", "context_only"}:
+        raise HTTPException(status_code=422, detail="Choose private storage or context-only import")
+    if not files:
+        raise HTTPException(status_code=422, detail="Choose at least one file")
+    limit = 50 * 1024 * 1024
+    collected: list[tuple[UploadFile, bytes]] = []
+    total = 0
+    for upload in files:
+        content = await upload.read()
+        total += len(content)
+        if total > limit:
+            raise HTTPException(status_code=413, detail="Folder uploads are limited to 50 MB total")
+        collected.append((upload, content))
+    from lib.storage import delete_private, safe_path, upload_private
+
+    uploaded_paths: list[str] = []
+    created: list[ProjectFile] = []
+    text_extensions = {".txt", ".md", ".csv", ".json", ".xml", ".py", ".js", ".ts", ".tsx", ".html", ".css", ".yaml", ".yml"}
+    try:
+        for upload, content in collected:
+            relative_path = safe_path(upload.filename or "untitled")
+            extension = os.path.splitext(relative_path.lower())[1]
+            storage_path = None
+            if mode == "stored":
+                storage_path = await upload_private(owner_id, project_id, relative_path, content, upload.content_type or "application/octet-stream")
+                uploaded_paths.append(storage_path)
+                status = "stored_private"
+            else:
+                if extension not in text_extensions:
+                    raise HTTPException(status_code=415, detail=f"{relative_path} cannot be converted to context. Store the original privately instead.")
+                extracted = content.decode("utf-8", errors="replace").strip()
+                if extracted:
+                    context_entry = PersonaEntry(
+                        owner_id=owner_id,
+                        category="Project files",
+                        label=relative_path,
+                        value=extracted[:20000],
+                        entry_type="fact",
+                        scope="project",
+                        source="context_only_folder_import",
+                    )
+                    context_doc = context_entry.model_dump()
+                    context_doc["project_id"] = project_id
+                    await db.project_context_entries.insert_one(context_doc)
+                status = "context_created_original_discarded"
+            record = ProjectFile(
+                project_id=project_id,
+                owner_id=owner_id,
+                relative_path=relative_path,
+                size=len(content),
+                content_type=upload.content_type or "application/octet-stream",
+                mode=mode,
+                status=status,
+                storage_path=storage_path,
+            )
+            await db.project_files.insert_one(record.model_dump())
+            created.append(record)
+    except Exception:
+        await delete_private(uploaded_paths)
+        if created:
+            await db.project_files.delete_many({"id": {"$in": [item.id for item in created]}})
+        raise
+    return ProjectFilesResponse(files=created, total_bytes=sum(item.size for item in created if item.mode == "stored"))
+
+
+@router.get("/projects/{project_id}/files/{file_id}/download", response_model=DownloadResponse)
+async def download_project_file(project_id: str, file_id: str, owner_id: str = Depends(require_owner)):
+    await get_project(owner_id, project_id)
+    document = await db.project_files.find_one({"id": file_id, "project_id": project_id, "owner_id": owner_id, "mode": "stored"})
+    if not document or not document.get("storage_path"):
+        raise HTTPException(status_code=404, detail="Stored file not found")
+    from lib.storage import signed_download
+
+    return DownloadResponse(url=await signed_download(document["storage_path"]))
 
 
 @router.get("/projects/{project_id}/proposals", response_model=list[ProgressProposal])

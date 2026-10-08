@@ -1,9 +1,9 @@
 # Skipti AI Living Specification
 
-Skipti AI is an MCP-first context intelligence MVP. The preview uses a demo owner session and the local Mongo persistence adapter; the included Supabase migration is the production target but is not active without credentials.
+Skipti AI is a multi-tenant, MCP-first context intelligence application. Supabase Auth provides email/password identities and sessions, Supabase Storage keeps private project files, and every application record in the Mongo service layer is isolated by the verified Supabase user UUID.
 
 ## Core flows
-- Demo owner enters at `/login`, reviews Base/Living Persona context, and can run the adaptive interview at `/setup`.
+- Users create an account or sign in at `/signup` and `/login`. Every owner view is guarded, and profile details come from the active Supabase account.
 - Project Holders keep structured canonical state. Progress is first stored as a proposal, then an owner approval creates an immutable revision checkpoint with optimistic concurrency protection.
 - The Context Router selects minimum approved context by query and optional project scope. The Playground sends that exact selection to Gemini and displays the retrieval trace.
 - The official Python MCP SDK exposes authenticated Streamable HTTP at `/mcp/`. A bearer token protects discovery and tools; MCP and REST call the same service layer.
@@ -13,18 +13,22 @@ Skipti AI is an MCP-first context intelligence MVP. The preview uses a demo owne
 
 ## Visual system
 - Two-family editorial type system: Cormorant Garamond for confident display typography and IBM Plex Sans for interface/body text.
-- Dark charcoal surfaces, one burgundy accent, consistent rounded panels, restrained shadows, visible focus states, reduced-motion support, skeleton loading states, and full mobile navigation.
+- Dark charcoal surfaces, one burgundy accent, consistent rounded panels, restrained shadows, visible focus states, reduced-motion support, skeleton loading states, and full mobile navigation. Shared `.panel` surfaces use restrained glassmorphism with a 24px backdrop blur.
 - Public surfaces use custom Skipti context artwork, real system proof, social preview metadata, a custom Skipti favicon, and a dedicated 404 experience.
 
 ## Seed facts
-- Demo owner: Alex Morgan (`demo@skipti.ai`)
-- Seed Project Holders: Skipti AI (`11111111-1111-4111-8111-111111111111`, revision 3) and Focus Room (`22222222-2222-4222-8222-222222222222`, revision 2)
-- Six approved Persona entries cover goals, skills, AI preferences, hardware, and tools.
+- Legacy seeded records remain archived under their old owner identifier and are inaccessible to registered accounts.
+- Each account starts empty and creates its own Persona, Project Holders, temporary passes, project files, and account-scoped MCP token.
 
 ## Data model
-`users`, `auth_sessions`, `personas`, `persona_entries`, `interview_sessions`, `projects`, `project_context_entries`, `project_update_proposals`, `project_checkpoints`, `temporary_grants`, `guest_sessions`, `guest_chat_messages`, and `context_access_logs`.
+Supabase: `auth.users`, `public.users`, private `storage.objects`, `personas`, `persona_entries`, `projects`, `temporary_sessions`, `session_permissions`, and `context_access_logs`. Mongo service collections: `personas`, `persona_entries`, `interview_sessions`, `projects`, `project_context_entries`, `project_files`, `project_update_proposals`, `project_checkpoints`, `temporary_grants`, `guest_sessions`, `guest_chat_messages`, `mcp_tokens`, and `context_access_logs`.
 
 ## Auth roles
-- Owner: demo httpOnly cookie, full REST access and approval controls.
-- MCP owner client: bearer token with read/write scopes.
+- Owner: verified Supabase access/refresh tokens held only in secure httpOnly cookies, with full access only to records matching the token subject.
+- MCP owner client: per-account revocable bearer token with read/write scopes.
 - Guest: one-time redeemed Persona Pass cookie, read-only authorized context until expiry or revocation. The high-entropy QR token can separately authorize the no-cache plain-text AI link; it never grants write access.
+
+## Project folders
+- A Project Holder accepts a local folder up to 50 MB. Owners choose private original storage or context-only import.
+- Private originals use owner/project-prefixed Supabase Storage paths and short-lived download URLs.
+- Context-only imports accept text/code formats, create project-scoped context entries, and never persist the original file bytes.

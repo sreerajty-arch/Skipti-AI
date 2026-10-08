@@ -13,7 +13,27 @@ class UserView(BaseModel):
     id: str
     email: str
     display_name: str
-    auth_mode: str = "demo_owner"
+    auth_mode: str = "supabase_email"
+
+
+class AuthCredentials(BaseModel):
+    email: str = Field(min_length=5, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+
+
+class SignupRequest(AuthCredentials):
+    display_name: str = Field(min_length=2, max_length=80)
+
+
+class AuthResponse(BaseModel):
+    user: UserView | None = None
+    message: str
+    requires_confirmation: bool = False
+
+
+class McpTokenResponse(BaseModel):
+    token: str
+    message: str
 
 
 class PersonaEntryCreate(BaseModel):
@@ -115,6 +135,29 @@ class ProjectDetail(BaseModel):
     project: Project
     context_entries: list[PersonaEntry]
     pending_proposals: int
+
+
+class ProjectFile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    project_id: str
+    owner_id: str
+    relative_path: str
+    size: int
+    content_type: str
+    mode: Literal["stored", "context_only"]
+    status: Literal["stored_private", "context_created_original_discarded"]
+    storage_path: str | None = None
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class ProjectFilesResponse(BaseModel):
+    files: list[ProjectFile]
+    total_bytes: int
+
+
+class DownloadResponse(BaseModel):
+    url: str
+    expires_in: int = 60
 
 
 class ProgressProposalCreate(BaseModel):

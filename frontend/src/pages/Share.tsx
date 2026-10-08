@@ -9,13 +9,15 @@ import { apiGet, apiPost } from "@/lib/api";
 import type { Project, ShareCreated, ShareGrant } from "@/lib/skipti";
 
 const permissionOptions = [
-  { id: "general_profile", label: "General profile", detail: "All approved non-sensitive Base Persona entries" },
+  { id: "general_profile", label: "General profile", detail: "Select every approved context category below" },
   { id: "goals", label: "Goals", detail: "Current user-approved goals only" },
   { id: "skills", label: "Skills", detail: "Relevant technical experience only" },
   { id: "ai_preferences", label: "AI preferences", detail: "Response and collaboration style" },
   { id: "project", label: "Project overview", detail: "Identity, purpose, description, and stack" },
   { id: "project_progress", label: "Approved project progress", detail: "Latest completed work, blockers, decisions, and next steps" },
 ];
+
+const allPermissionIds = permissionOptions.map((permission) => permission.id);
 
 function formatRemaining(seconds: number): string {
   const safe = Math.max(0, seconds);
@@ -27,10 +29,20 @@ export default function Share() {
   const client = useQueryClient();
   const [projectId, setProjectId] = useState("11111111-1111-4111-8111-111111111111");
   const [duration, setDuration] = useState(15);
-  const [permissions, setPermissions] = useState(new Set(["goals", "skills", "ai_preferences", "project", "project_progress"]));
+  const [permissions, setPermissions] = useState(new Set(allPermissionIds));
   const [retainChat, setRetainChat] = useState(false);
   const [created, setCreated] = useState<ShareCreated | null>(null);
   const [createdRemaining, setCreatedRemaining] = useState(0);
+
+  const updatePermission = (permissionId: string, checked: boolean) => {
+    setPermissions((current) => {
+      if (permissionId === "general_profile" && checked) return new Set(allPermissionIds);
+      const next = new Set(current);
+      if (checked) next.add(permissionId); else next.delete(permissionId);
+      if (permissionId !== "general_profile") next.delete("general_profile");
+      return next;
+    });
+  };
 
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => apiGet<Project[]>("/projects") });
   const shares = useQuery({ queryKey: ["shares"], queryFn: () => apiGet<ShareGrant[]>("/shares"), retry: false });
@@ -90,11 +102,7 @@ export default function Share() {
               <label className="flex cursor-pointer gap-3 border-t border-border py-4" key={permission.id} data-testid={`share-permission-${permission.id}-row`}>
                 <Checkbox
                   checked={permissions.has(permission.id)}
-                  onCheckedChange={(checked) => setPermissions((current) => {
-                    const next = new Set(current);
-                    if (checked) next.add(permission.id); else next.delete(permission.id);
-                    return next;
-                  })}
+                  onCheckedChange={(checked) => updatePermission(permission.id, Boolean(checked))}
                   data-testid={`share-permission-${permission.id}-checkbox`}
                 />
                 <span>
@@ -116,7 +124,7 @@ export default function Share() {
           </div>
           <div className="mt-6 flex items-center justify-between gap-5 border-y border-border py-5" data-testid="share-chat-retention-row">
             <div>
-              <p className="text-sm" data-testid="share-chat-retention-label">Keep chat until this pass expires</p>
+              <div className="flex items-center gap-2"><p className="text-sm" data-testid="share-chat-retention-label">Keep chat until this pass expires</p><span className={`rounded-full border px-2 py-0.5 font-mono text-[8px] uppercase tracking-widest ${retainChat ? "border-[#8f2e50] bg-[#261117] text-[#e3aabd]" : "border-border bg-[#12100f] text-muted-foreground"}`} data-testid="share-chat-retention-state">{retainChat ? "On" : "Off"}</span></div>
               <p className="mt-1 max-w-sm text-[11px] leading-5 text-muted-foreground" data-testid="share-chat-retention-description">Off deletes temporary messages as soon as the guest ends or you revoke. On retains them only until the selected expiration.</p>
             </div>
             <button
@@ -124,10 +132,11 @@ export default function Share() {
               role="switch"
               aria-checked={retainChat}
               onClick={() => setRetainChat((value) => !value)}
-              className={`relative h-6 w-11 shrink-0 rounded-full border transition-[background-color,border-color] duration-200 ${retainChat ? "border-[#872c4c] bg-[#6e0d25]" : "border-[#51494b] bg-[#211e1c]"}`}
+              aria-label="Keep chat until this pass expires"
+              className={`relative h-7 w-12 shrink-0 overflow-hidden rounded-full border transition-[background-color,border-color,box-shadow] duration-200 ${retainChat ? "border-[#b44a6d] bg-[#761f3d] shadow-[0_0_0_3px_rgba(118,31,61,.16)]" : "border-[#51494b] bg-[#12100f]"}`}
               data-testid="share-chat-retention-switch"
             >
-              <span className={`absolute top-1 size-3.5 rounded-full bg-[#fafaf9] transition-[transform] duration-200 ${retainChat ? "translate-x-5" : "translate-x-1"}`} />
+              <span className={`absolute left-1 top-1 size-[18px] rounded-full bg-[#f5f1ec] shadow-[0_2px_8px_rgba(0,0,0,.3)] transition-[transform] duration-200 ${retainChat ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
           <Button className="mt-7 w-full" size="lg" type="submit" disabled={create.isPending || permissions.size === 0} data-testid="share-generate-button">

@@ -27,11 +27,6 @@ from models.skipti import (
 from services.ai import answer_with_context, extract_progress
 
 
-OWNER_ID = "00000000-0000-4000-8000-000000000001"
-OWNER_EMAIL = "demo@skipti.ai"
-OWNER_NAME = "Alex Morgan"
-
-
 def hash_token(token: str) -> str:
     secret = os.environ.get("SESSION_SECRET", "")
     return hashlib.sha256(f"{secret}:{token}".encode()).hexdigest()
@@ -43,26 +38,6 @@ def normalize_document(document: dict[str, Any]) -> dict[str, Any]:
         if isinstance(value, datetime) and value.tzinfo is None:
             document[key] = value.replace(tzinfo=timezone.utc)
     return document
-
-
-async def create_owner_session() -> str:
-    token = secrets.token_urlsafe(32)
-    await db.auth_sessions.insert_one(
-        {
-            "token_hash": hash_token(token),
-            "owner_id": OWNER_ID,
-            "created_at": utc_now(),
-            "expires_at": utc_now() + timedelta(days=7),
-        }
-    )
-    return token
-
-
-async def resolve_owner_session(token: str | None) -> str | None:
-    if not token:
-        return None
-    session = await db.auth_sessions.find_one({"token_hash": hash_token(token), "expires_at": {"$gt": utc_now()}})
-    return session.get("owner_id") if session else None
 
 
 async def get_persona_entries(owner_id: str, approved_only: bool = True) -> list[PersonaEntry]:
@@ -165,6 +140,25 @@ async def search_context(
                 "Decisions": "; ".join(project.decisions),
                 "Next steps": "; ".join(project.next_steps),
             })
+        if permissions is None or "project" in permissions:
+            file_context_docs = await db.project_context_entries.find(
+                {"owner_id": owner_id, "project_id": project_id, "approval_status": "approved"}
+            ).sort("updated_at", -1).to_list(100)
+            for raw in file_context_docs:
+                entry = PersonaEntry(**normalize_document(raw))
+                overlap = len(query_tokens & _tokens(f"{entry.label} {entry.value}"))
+                candidates.append((
+                    overlap * 5 + 3,
+                    ContextSelection(
+                        id=entry.id,
+                        category="Project files",
+                        label=entry.label,
+                        value=entry.value,
+                        source=entry.source,
+                        reason="Imported project folder context",
+                        project_id=project.id,
+                    ),
+                ))
         for label, value in project_fields.items():
             if not value:
                 continue

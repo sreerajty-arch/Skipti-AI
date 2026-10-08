@@ -60,6 +60,14 @@ INDEXES: dict[str, list[IndexModel]] = {
         IndexModel([("expires_at", ASCENDING)], name="expires_at_ttl", expireAfterSeconds=0),
     ],
     "context_access_logs": [IndexModel([("owner_id", ASCENDING), ("created_at", DESCENDING)], name="owner_created")],
+    "project_files": [
+        IndexModel([("id", ASCENDING)], name="id", unique=True),
+        IndexModel([("owner_id", ASCENDING), ("project_id", ASCENDING), ("created_at", DESCENDING)], name="owner_project_created"),
+    ],
+    "mcp_tokens": [
+        IndexModel([("token_hash", ASCENDING)], name="token_hash", unique=True),
+        IndexModel([("owner_id", ASCENDING), ("created_at", DESCENDING)], name="owner_created"),
+    ],
 }
 
 

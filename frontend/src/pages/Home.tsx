@@ -15,7 +15,7 @@ export default function Home() {
     <main className="editorial-grid min-h-screen overflow-hidden bg-[#0c0a09] text-[#fafaf9]" data-testid="public-home-page">
       <nav className="relative z-20 flex items-center justify-between border-b border-[#292524] px-6 py-5 lg:px-12" data-testid="public-navigation">
         <Link to="/" className="flex items-center gap-3 font-heading text-3xl" data-testid="home-logo-link"><img src="/skipti-mark.svg" alt="" className="size-9 rounded-xl" /> Skipti AI</Link>
-        <Link to="/login" className={buttonVariants({ variant: "outline", size: "sm" })} data-testid="home-open-workspace-link">Open workspace <ArrowRight className="size-3.5" /></Link>
+        <div className="flex items-center gap-2"><Link to="/login" className={buttonVariants({ variant: "ghost", size: "sm" })} data-testid="home-login-link">Login</Link><Link to="/signup" className={buttonVariants({ size: "sm" })} data-testid="home-signup-link">Sign up <ArrowRight className="size-3.5" /></Link></div>
       </nav>
       <section className="relative mx-auto grid min-h-[calc(100vh-81px)] max-w-[1500px] lg:grid-cols-[1.18fr_.82fr]" data-testid="home-hero-section">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="relative z-10 flex flex-col justify-center px-6 py-20 lg:px-16 lg:py-28" data-testid="home-hero-copy">
@@ -23,15 +23,15 @@ export default function Home() {
           <h1 className="max-w-4xl font-heading text-[clamp(4rem,9vw,8.8rem)] font-light leading-[.8] tracking-[-.06em]" data-testid="home-headline">Your context.<br /><em className="font-normal text-[#c47a91]">Any AI.</em><br />Temporarily.</h1>
           <p className="mt-10 max-w-xl text-base leading-7 text-[#aaa5a8]" data-testid="home-description">One evolving source of approved Persona and project memory. Routed with minimum disclosure, shared through a real MCP endpoint, and always controlled by you.</p>
           <div className="mt-10 flex flex-wrap gap-3" data-testid="home-hero-actions">
-            <Link to="/login" className={buttonVariants({ size: "lg" })} data-testid="home-enter-demo-link">Enter live demo <ArrowRight className="size-4" /></Link>
-            <Link to="/playground" className={buttonVariants({ variant: "outline", size: "lg" })} data-testid="home-view-playground-link">View MCP playground</Link>
+            <Link to="/signup" className={buttonVariants({ size: "lg" })} data-testid="home-create-account-link">Create your account <ArrowRight className="size-4" /></Link>
+            <Link to="/login" className={buttonVariants({ variant: "outline", size: "lg" })} data-testid="home-signin-link">Sign in</Link>
           </div>
           <div className="mt-12 grid max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-border bg-border" data-testid="home-proof-grid">
             {[{ value: "18", label: "MCP tools" }, { value: "15", label: "Verified checks" }, { value: "2", label: "Isolated projects" }].map((proof) => <div className="bg-[#12100f] px-4 py-4" key={proof.label} data-testid={`home-proof-${proof.label.toLowerCase().replaceAll(" ", "-")}`}><p className="font-heading text-3xl text-[#f5f1ec]" data-testid={`home-proof-${proof.label.toLowerCase().replaceAll(" ", "-")}-value`}>{proof.value}</p><p className="mt-1 text-[10px] text-[#78716c]" data-testid={`home-proof-${proof.label.toLowerCase().replaceAll(" ", "-")}-label`}>{proof.label}</p></div>)}</div>
-          <p className="mt-5 font-mono text-[9px] uppercase tracking-[0.18em] text-[#78716c]" data-testid="home-demo-disclosure">Demo owner · Supabase AI links · Gemini connected</p>
+          <p className="mt-5 font-mono text-[9px] uppercase tracking-[0.18em] text-[#78716c]" data-testid="home-security-disclosure">Supabase accounts · Private project storage · Gemini connected</p>
         </motion.div>
         <div className="relative overflow-hidden border-t border-[#292524] bg-[#100d0e] p-6 lg:border-l lg:border-t-0 lg:p-12" data-testid="home-architecture-panel">
-          <img src="https://static.prod-images.emergentagent.com/jobs/998467b0-e0cb-41de-9528-3854c8262275/images/86651936e90994e3fab1ceb2e1097038611957257229a46dca61f4133da8715e.jpeg" alt="Abstract secure context network" className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-screen" fetchPriority="high" data-testid="home-context-artwork" />
+          <motion.img src="https://static.prod-images.emergentagent.com/jobs/998467b0-e0cb-41de-9528-3854c8262275/images/86651936e90994e3fab1ceb2e1097038611957257229a46dca61f4133da8715e.jpeg" alt="Abstract secure context network" className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-screen" initial={{ scale: 1.03 }} animate={{ scale: 1.08, x: -8 }} transition={{ duration: 14, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }} data-testid="home-context-artwork" />
           <div className="absolute inset-0 bg-[#100d0e]/60" />
           <div className="relative flex h-full flex-col justify-center">
             <div className="mb-7 flex items-center justify-between"><span className="font-mono text-[10px] uppercase tracking-widest text-[#aaa5a8]" data-testid="home-flow-label">Live context flow</span><span className="flex items-center gap-2 font-mono text-[9px] uppercase text-emerald-300" data-testid="home-flow-status"><span className="size-1.5 animate-status-pulse rounded-full bg-emerald-400" /> Operational</span></div>

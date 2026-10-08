@@ -5,6 +5,17 @@ export interface UserView {
   auth_mode: string;
 }
 
+export interface AuthResponse {
+  user: UserView | null;
+  message: string;
+  requires_confirmation: boolean;
+}
+
+export interface McpTokenResponse {
+  token: string;
+  message: string;
+}
+
 export type EntryType = "fact" | "preference" | "constraint" | "goal";
 
 export interface PersonaEntry {
@@ -53,6 +64,29 @@ export interface ProjectDetail {
   project: Project;
   context_entries: PersonaEntry[];
   pending_proposals: number;
+}
+
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  owner_id: string;
+  relative_path: string;
+  size: number;
+  content_type: string;
+  mode: "stored" | "context_only";
+  status: "stored_private" | "context_created_original_discarded";
+  storage_path: string | null;
+  created_at: string;
+}
+
+export interface ProjectFilesResponse {
+  files: ProjectFile[];
+  total_bytes: number;
+}
+
+export interface DownloadResponse {
+  url: string;
+  expires_in: number;
 }
 
 export interface ProgressProposal {

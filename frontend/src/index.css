@@ -169,6 +169,11 @@ body::before {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes hero-drift {
+  from { transform: scale(1.03) translate3d(0, 0, 0); }
+  to { transform: scale(1.09) translate3d(-1.5%, -1%, 0); }
+}
+
 @keyframes skeleton-shimmer {
   from { background-position: 200% 0; }
   to { background-position: -200% 0; }
@@ -178,6 +183,7 @@ body::before {
 .animate-trace-in { animation: trace-in 420ms ease-out both; }
 .animate-scan-line { animation: scan-line 5s linear infinite; }
 .page-enter { animation: page-enter 360ms cubic-bezier(.22, 1, .36, 1) both; }
+.animate-hero-drift { animation: hero-drift 16s ease-in-out infinite alternate; }
 
 .skeleton {
   background: linear-gradient(90deg, #191615 20%, #292324 50%, #191615 80%);
@@ -186,15 +192,18 @@ body::before {
 }
 
 .panel {
-  border: 1px solid #302a2c;
+  border: 1px solid rgba(245, 241, 236, 0.12);
   border-radius: 1rem;
-  background: rgba(23, 20, 19, 0.82);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
+  background: rgba(23, 20, 19, 0.62);
+  -webkit-backdrop-filter: blur(24px) saturate(115%);
+  backdrop-filter: blur(24px) saturate(115%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 48px rgba(0, 0, 0, 0.2);
   transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
 }
 
 .panel:hover {
-  border-color: #47383d;
+  border-color: rgba(180, 74, 109, 0.34);
+  background: rgba(27, 22, 23, 0.68);
 }
 
 .editorial-grid {
@@ -204,5 +213,5 @@ body::before {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .animate-status-pulse, .animate-trace-in, .animate-scan-line, .page-enter, .skeleton { animation: none; }
+  .animate-status-pulse, .animate-trace-in, .animate-scan-line, .animate-hero-drift, .page-enter, .skeleton { animation: none; }
 }
