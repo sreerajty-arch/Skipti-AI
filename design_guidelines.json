@@ -1,0 +1,112 @@
+{
+  "theme_strategy": "Dark theme default (Focus Room Charcoal/Burgundy Editorial System), reflecting a premium, focused, deep aesthetic. No pure black, no pure white. Muted luxury.",
+  "typography": {
+    "headings": {
+      "family": "Cormorant Garamond, serif",
+      "weights": ["300", "400", "600", "700"],
+      "usage": "H1, H2, H3, Editorial blocks, Persona headers. Never use Inter or generic sans for headings.",
+      "letter_spacing": "tracking-tight"
+    },
+    "body": {
+      "family": "IBM Plex Sans, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Data tables, input fields, general UI, Project details.",
+      "letter_spacing": "tracking-normal"
+    },
+    "monospace": {
+      "family": "JetBrains Mono, monospace",
+      "weights": ["400"],
+      "usage": "Visible retrieval trace, Context Router JSON, MCP tool calls."
+    }
+  },
+  "colors": {
+    "background": {
+      "base": "#0c0a09",
+      "surface": "#1c1917",
+      "elevated": "#292524",
+      "glass": "bg-[#0c0a09]/70 backdrop-blur-2xl"
+    },
+    "text": {
+      "primary": "#fafaf9",
+      "secondary": "#a8a29e",
+      "muted": "#78716c"
+    },
+    "brand": {
+      "primary": "#6E0D25",
+      "primary_hover": "#8A112E",
+      "accent": "#4A0404"
+    },
+    "border": {
+      "default": "#292524",
+      "focus": "#6E0D25",
+      "subtle": "#1c1917"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": "Surface-based elevation using 1px borders and very subtle ambient glows (e.g., shadow-[0_0_15px_rgba(110,13,37,0.15)] for active burgundy states). NO deep drop shadows.",
+    "borders": "1px solid #292524. For active or selected states, use border-[#6E0D25].",
+    "textures": "Use grain/noise overlays (opacity 2-5%) on the main background to eliminate digital flatness.",
+    "glassmorphism": "Only for floating elements (Context Router overlays, Persona Pass modal). Use backdrop-blur-xl bg-[#0c0a09]/80 with a 1px border-white/5. NO fully transparent overlays."
+  },
+  "layouts_and_grids": {
+    "global_spacing": "Generous. p-6 to p-12 for containers. gap-6 to gap-12 for bento grids.",
+    "app_shell": "Collapsible left sidebar (charcoal base) + Main content area. Full viewport height.",
+    "bento_grids": "For Persona Core and Project Holders, use asymmetrical bento grids. Use col-span-full for the main summary, col-span-1 or 2 for specific context traits.",
+    "alignment": "Left-align all content and dense data. Center alignment only for empty states."
+  },
+  "components": {
+    "buttons": "Sharp corners or subtle 2px radius. bg-[#6E0D25] text-white for primary. border border-[#292524] hover:bg-[#292524] text-[#fafaf9] for secondary.",
+    "cards": "Flat background (#1c1917), 1px subtle border (#292524), no drop shadow. Hover: slight border color shift to burgundy.",
+    "inputs": "Shadcn components, but stripped of rounded corners (radius-none). bg-[#0c0a09] border-[#292524] focus:border-[#6E0D25] focus:ring-1 focus:ring-[#6E0D25].",
+    "tables_and_lists": "Row-based border-b border-[#292524]. No side borders."
+  },
+  "motion_and_interactions": {
+    "hover_states": "Buttons and cards gently shift background color. No excessive scaling.",
+    "page_transitions": "Framer Motion: fade in and slide up (y: 10, opacity: 0 -> y: 0, opacity: 1) over 0.4s.",
+    "micro_interactions": "Retrieval trace in the Playground should stream in with a typewriter effect or stagger fade-in."
+  },
+  "accessibility": {
+    "contrast": "Ensure off-white text (#fafaf9) on charcoal (#0c0a09) meets 4.5:1 ratio. Burgundy accents used for UI structure, not primary text.",
+    "focus_states": "High contrast ring focus ring-[#6E0D25] on all interactive elements.",
+    "reduced_motion": "Respect prefers-reduced-motion CSS queries."
+  },
+  "image_urls": {
+    "login_hero_texture": {
+      "url": "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA0MTJ8MHwxfHNlYXJjaHwzfHxkYXJrJTIwY2hhcmNvYWwlMjB0ZXh0dXJlfGVufDB8fHx8MTc5MTQ0NjA3Nnww&ixlib=rb-4.1.0&q=85",
+      "description": "Dark charcoal texture for login page background or empty states.",
+      "category": "backgrounds"
+    },
+    "persona_pass_accent": {
+      "url": "https://images.unsplash.com/photo-1629197520669-0210d6b270d9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxidXJndW5keSUyMGFic3RyYWN0fGVufDB8fHx8MTc5MTQ0NjA3NXww&ixlib=rb-4.1.0&q=85",
+      "description": "Deep burgundy watercolor texture for the Persona Pass/QR card background.",
+      "category": "accents"
+    }
+  },
+  "key_functionalities_guidelines": {
+    "demo_owner_auth": "Centered minimalist session unlock/login form over the charcoal texture. Editorial typography for the greeting.",
+    "persona_core": "Two-pane view. Left: Base Persona (immutable core traits). Right: Living Persona (dynamic updates). Use bento grids to organize traits.",
+    "project_holders": "Dashboard grid of active projects. Progress proposals in a distinct 'approval pending' state with a burgundy pulsing dot.",
+    "context_router": "Node-like or dense tabular view showing how context is mapped to queries. Display immutable checkpoints clearly.",
+    "playground": "Split view: Chat on the left, 'Visible Retrieval Trace' on the right in Monospace font. MCP server endpoints clearly visible as tags/badges.",
+    "persona_pass": "Modal overlay featuring a QR Code on a burgundy textured card, with toggle switches for permissions and a revocation action."
+  },
+  "instructions_to_main_agent": [
+    "Follow the EXACT Charcoal/Burgundy Editorial System. No generic Tailwind blues or grays.",
+    "Use pure HTML + Tailwind for complex bento grids; use customized Shadcn for forms, dialogs, dropdowns.",
+    "Ensure all fonts are loaded correctly (Cormorant Garamond, IBM Plex Sans, JetBrains Mono) via Google Fonts or standard imports.",
+    "Build the app connecting to the local Mongo-backend adapter and Gemini API.",
+    "Ensure the full demo works in the Preview tab (use visual representation or mock for MCP if ports cannot be exposed, but visually show the MCP trace).",
+    "Add data-testid attributes to ALL interactive elements.",
+    "Do NOT center align the app container (.App { text-align: left; } ).",
+    "Make sure navigation handles Persona, Projects, and Playground."
+  ],
+  "universal_guidelines_for_main_agent": [
+    "You MUST NOT apply universal transition (e.g., transition: all).",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur).",
+    "NEVER use AI assistant Emoji characters (🤖🧠💭💡🔮🎯) for icons. Use lucide-react or phosphor icons.",
+    "Every interaction needs micro-animations - hover states, transitions.",
+    "Prioritize using pre-existing components from src/components/ui.",
+    "Use sonner for toasts, located in /app/src/components/ui/sonner.tsx"
+  ]
+}

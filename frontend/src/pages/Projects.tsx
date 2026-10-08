@@ -1,0 +1,23 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { AppShell, PageHeader, StatusPill } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { apiGet, apiPost } from "@/lib/api";
+import type { Project } from "@/lib/skipti";
+
+export default function Projects() {
+  const client = useQueryClient();
+  const [showCreate, setShowCreate] = useState(false);
+  const [name, setName] = useState(""); const [description, setDescription] = useState(""); const [stack, setStack] = useState("");
+  const projects = useQuery({ queryKey: ["projects"], queryFn: () => apiGet<Project[]>("/projects"), retry: false });
+  const create = useMutation({ mutationFn: () => apiPost<Project>("/projects", { name, description, purpose: description, stack: stack.split(",").map((item) => item.trim()).filter(Boolean) }), onSuccess: () => { client.invalidateQueries({ queryKey: ["projects"] }); client.invalidateQueries({ queryKey: ["overview"] }); setName(""); setDescription(""); setStack(""); setShowCreate(false); toast.success("Project Holder created"); }, onError: () => toast.error("Could not create the Project Holder") });
+  return <AppShell><PageHeader eyebrow="Project holders" title="Canonical project memory." description="Every project keeps an independent, versioned state so one authorized client can continue where another stopped." action={<Button onClick={() => setShowCreate((value) => !value)} data-testid="projects-toggle-create-button"><Plus className="size-4" /> New holder</Button>} />
+    {showCreate ? <form className="panel mb-8 grid gap-4 p-6 md:grid-cols-2" onSubmit={(event) => { event.preventDefault(); create.mutate(); }} data-testid="project-create-form"><div><label className="mb-2 block text-xs text-muted-foreground" htmlFor="project-name" data-testid="project-name-label">Project name</label><Input id="project-name" value={name} onChange={(event) => setName(event.target.value)} required data-testid="project-name-input" /></div><div><label className="mb-2 block text-xs text-muted-foreground" htmlFor="project-stack" data-testid="project-stack-label">Stack, comma separated</label><Input id="project-stack" value={stack} onChange={(event) => setStack(event.target.value)} placeholder="FastAPI, React, MCP" data-testid="project-stack-input" /></div><div className="md:col-span-2"><label className="mb-2 block text-xs text-muted-foreground" htmlFor="project-description" data-testid="project-description-label">Description and purpose</label><Textarea id="project-description" value={description} onChange={(event) => setDescription(event.target.value)} required data-testid="project-description-input" /></div><Button type="submit" disabled={create.isPending} data-testid="project-create-submit-button">{create.isPending ? "Creating…" : "Create Project Holder"}</Button></form> : null}
+    <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" data-testid="projects-grid">{(projects.data ?? []).map((project, index) => <Link to={`/projects/${project.id}`} key={project.id} className={`group panel relative min-h-72 overflow-hidden p-6 transition-[border-color,background-color] duration-200 hover:border-[#6e0d25] ${index === 0 ? "md:col-span-2" : ""}`} data-testid={`project-card-${project.id}`}><div className="flex items-center justify-between"><StatusPill tone="good">{project.status}</StatusPill><span className="font-mono text-[10px] text-muted-foreground" data-testid={`project-card-${project.id}-revision`}>REV {project.revision}</span></div><h2 className="mt-12 font-heading text-4xl" data-testid={`project-card-${project.id}-name`}>{project.name}</h2><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground" data-testid={`project-card-${project.id}-description`}>{project.description}</p><div className="absolute inset-x-6 bottom-6 flex items-center justify-between border-t border-border pt-4"><span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground" data-testid={`project-card-${project.id}-progress`}>{project.completed.length} completed · {project.in_progress.length} active</span><ArrowRight className="size-4 transition-[transform,color] group-hover:translate-x-1 group-hover:text-[#d7a0b1]" /></div></Link>)}</section>
+  </AppShell>;
+}

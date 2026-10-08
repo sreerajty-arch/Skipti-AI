@@ -1,0 +1,116 @@
+{
+  "iteration": 1,
+  "passed": 15,
+  "failed": 0,
+  "flaky": 1,
+  "blocked": 0,
+  "test_error": 0,
+  "retest_needed": true,
+  "bugs": [],
+  "action_items": [
+    {
+      "item": "Gemini playground test is flaky under parallel pytest-xdist load (503 'Gemini is temporarily unavailable: ChatError' on concurrent runs; passes consistently when run alone or via the browser check). Likely upstream rate limiting under concurrency, not an app defect. No action required unless it reproduces outside of parallel test execution.",
+      "severity": "low"
+    }
+  ],
+  "checks": [
+    {
+      "criterion": "Demo owner authentication and dashboard",
+      "name": "test_tscheck_auth_dashboard.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/overview without cookie -> 401. POST /api/auth/demo -> 200 {email: demo@skipti.ai}. GET /api/overview (authed) -> 200 {persona_entries>=6, project_count>=2, projects include both seeded project ids}."
+    },
+    {
+      "criterion": "Demo owner authentication and dashboard",
+      "name": "owner-login-shows-seeded-dashboard",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Clicked 'Enter demo workspace' on /login, dashboard-stat-grid rendered with approved-entries>=6 and project-holders>=2; also re-verified through the public preview URL (owner-login-shows-seeded-dashboard-preview) with the same assertions."
+    },
+    {
+      "criterion": "Persona onboarding and context ownership",
+      "name": "test_tscheck_persona_onboarding.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/interview/start -> 201 {session_id, question}; POST /api/interview/answer -> 200. POST /api/persona/entries -> 201 (owner_id set); entry visible in GET /api/persona; DELETE /api/persona/entries/{id} -> 200 and entry removed. Unauthenticated POST /api/persona/entries -> 401."
+    },
+    {
+      "criterion": "Persona onboarding and context ownership",
+      "name": "persona-interview-and-context-entry",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/setup: started interview, submitted an answer, skipped a question, question text progressed. /context: added tscheck-browser-entry via context-add-form, verified it rendered under its category, deleted it via its own delete button, verified removal."
+    },
+    {
+      "criterion": "Context Router minimum disclosure",
+      "name": "test_tscheck_context_router.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/context/search with project_id=11111111... -> 200 with non-empty selected[], available_count, excluded_count, approximate_tokens, project_revision>=1; no selected item referenced the other seeded project id. Unauthenticated request -> 401."
+    },
+    {
+      "criterion": "Context Router minimum disclosure",
+      "name": "context-router-minimum-disclosure",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/context router form: submitted a query, context-router-results showed selected-count > 0 plus excluded-count and token-count."
+    },
+    {
+      "criterion": "Project Holder continuity and checkpoints",
+      "name": "test_tscheck_project_continuity.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/projects/{id}/proposals -> 201 (base_revision = current rev). Approval with wrong expected_revision -> 409. Fresh proposal + correct expected_revision approval -> 200, checkpoint.revision = rev+1; GET /history contains that revision. Unauthenticated GET /api/projects/{id} -> 401."
+    },
+    {
+      "criterion": "Project Holder continuity and checkpoints",
+      "name": "project-holder-approve-checkpoint",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "On /projects/{skipti-ai-id}: submitted project-progress-input, captured created proposal id from the POST /proposals response, clicked its approve button, confirmed the approve POST returned 200 and the proposal row switched to the 'approved' label."
+    },
+    {
+      "criterion": "Gemini MCP Playground",
+      "name": "test_tscheck_gemini_playground.py",
+      "lane": "backend",
+      "status": "flaky",
+      "evidence": "POST /api/playground/ask -> 200 with non-empty answer and retrieval.selected non-empty, excluded_count and project_revision present, when run solo (confirmed twice). Under parallel pytest-xdist execution it occasionally returns 503 'Gemini is temporarily unavailable: ChatError' (upstream concurrency/rate-limit), reproduced on 2 parallel runs, passed both times when rerun alone."
+    },
+    {
+      "criterion": "Gemini MCP Playground",
+      "name": "playground-gemini-response-with-trace",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/playground: selected Skipti AI project, asked a question, awaited POST /api/playground/ask (200), rendered playground-answer-text (>10 chars), playground-mcp-tool-name, playground-trace-panel, playground-selected-context-list all visible; zero non-favicon console errors."
+    },
+    {
+      "criterion": "Real authenticated MCP Streamable HTTP",
+      "name": "test_tscheck_mcp_streamable_http.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Unauthenticated POST /mcp/ initialize -> 401. Real mcp SDK streamablehttp_client with Bearer skipti-demo-mcp-2026: initialize succeeded, list_tools() included get_project_progress and search_context, call_tool('get_project_progress', {project_id}) returned the project JSON containing the project id, call_tool('search_context', {query:'status'}) returned a 'selected' payload."
+    },
+    {
+      "criterion": "Persona Pass QR and revocation",
+      "name": "test_tscheck_persona_pass.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/shares -> 201 with connect_url+qr_data_uri. POST /api/shares/redeem -> 200 (status active); replay with same token -> 410. GET /api/guest/context -> 200 with grant+persona_entries. Owner POST /api/shares/{id}/revoke -> 200. Guest GET /api/guest/context after revoke -> 401. Unauthenticated POST /api/shares -> 401."
+    },
+    {
+      "criterion": "Persona Pass QR and revocation",
+      "name": "persona-pass-redeem-and-revoke",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/share: generated pass (POST /api/shares 201), navigated to /connect/{token}, redeemed (200), guest session page showed connect-session-status; replay redeem on same token -> 410 with connect-redeem-error shown; owner revoked via /share (200); guest reload of /connect/session showed connect-session-ended (401 confirmed)."
+    },
+    {
+      "criterion": "Exports and project isolation",
+      "name": "test_tscheck_exports_isolation.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/persona/export -> 200 markdown containing 'Revision' and revision>=1, no leaked 'sensitive' marker before the revision line. GET /api/projects/{A} and /api/projects/{B} -> each 200; neither project's name or id string appears inside the other's response payload."
+    }
+  ]
+}
